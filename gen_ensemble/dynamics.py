@@ -24,19 +24,19 @@ class DynamicsEnsemble(nn.Module):
                  decoder_hidden_dim, 
                  latent_dim,
                  n_hidden,
-                 training=False,
                  learn_rate=0.0001,
                  ):
 
         super(DynamicsEnsemble, self).__init__()
         self.ensemble_size = ensemble_size
-        self.training = training
 
         self.encoder = Encoder(in_dim, encoder_hidden_dim, latent_dim, n_hidden=n_hidden)
         self.decoders = self.build_decoder_ensemble(out_dim, decoder_hidden_dim, latent_dim, n_hidden)
         self.opt = optim.Adam(self.parameters(), lr=learn_rate)
 
         self.gaussian = Gaussian(latent_dim)
+        self.next_obs = None
+        self.reward = None
 
     def build_decoder_ensemble(self, out_dim, hidden_dim, latent_dim, n_hidden):
         return [
@@ -66,6 +66,23 @@ class DynamicsEnsemble(nn.Module):
     def sample_gaussian(self, mu, sigma):
         return self.gaussian(mu, sigma)
 
+    def sample_dynamics(self, x):
+        mu, logsigma = self.encoder(x)
+        sigma = logsigma.exp()
+        eps = torch.randn_like(sigma)
+        z = eps.mul(sigma).add_(mu)
+        out = self.random_decoder(z)
+        self.obs, self.reward = out[:-1], out[-1]
+        return self.obs, self.reward #, info, done
+
+    def reset(self, obs, action):
+        x = torch.cat([obs, action], dim=0)
+        return self.sample_dynamics(x)
+
+    def step(self, action):
+        x = torch.cat([self.obs, action], dim=0)
+        return self.sample_dynamics(x)
+
     def forward(self, x):
         """
             Get mu and sigma from encoder, sample from 
@@ -80,7 +97,7 @@ class DynamicsEnsemble(nn.Module):
         eps = torch.randn_like(sigma)
         z = eps.mul(sigma).add_(mu)
 
-        decoder = self.training_pass if self.training else self.random_decoder
+        decoder = self.training_pass
         next_obs_hat = decoder(z)
 
         return next_obs_hat, mu, logsigma
