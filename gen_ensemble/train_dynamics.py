@@ -40,6 +40,8 @@ def train(args, X, y, dev):
                                 args.n_hidden,
                                 training=True).to(dev)
 
+    exit(0)
+
     # shuffle prior to breaking off validation
     shuffle = torch.randperm(X.size()[0])
     X = X[shuffle]
@@ -85,30 +87,30 @@ def train(args, X, y, dev):
             next_obs = torch.cat(5*[next_obs.unsqueeze(0)], dim=0)
             val_mse_loss = F.mse_loss(next_obs_pred[0], next_obs)
 
-        # if val_mse_loss < val_mse_best:
-        #     loss = torch.mean(val_mse_loss).item()
-        #     checkpoint_path = os.path.join(args.checkpoints, exp_code, str(loss) + '.pt')
+        if val_mse_loss < val_mse_best:
+            loss = torch.mean(val_mse_loss).item()
+            checkpoint_path = os.path.join(args.checkpoints, exp_code, str(loss) + '.pt')
 
-        #     torch.save({
-        #     'epoch': epoch,
-        #     'model_state_dict': dynamics.state_dict(),
-        #     'optimizer_state_dict': dynamics.opt.state_dict(),
-        #     'loss': loss,
-        #     }, checkpoint_path)
+            torch.save({
+            'epoch': epoch,
+            'model_state_dict': dynamics.state_dict(),
+            'optimizer_state_dict': dynamics.opt.state_dict(),
+            'loss': loss,
+            }, checkpoint_path)
 
-        #     val_mse_best = val_mse_loss
+            val_mse_best = val_mse_loss
 
         losses = torch.stack(losses)
         mse_losses = torch.stack(mse_losses)
 
-        # writer.add_scalar("Loss/train/mse_loss", torch.mean(mse_losses), epoch)
-        # writer.add_scalar("Loss/train/loss0", torch.mean(losses[:,0]), epoch)
-        # writer.add_scalar("Loss/train/loss1", torch.mean(losses[:,1]), epoch)
-        # writer.add_scalar("Loss/train/loss2", torch.mean(losses[:,2]), epoch)
-        # writer.add_scalar("Loss/train/loss3", torch.mean(losses[:,3]), epoch)
-        # writer.add_scalar("Loss/train/loss4", torch.mean(losses[:,4]), epoch)
+        writer.add_scalar("Loss/train/mse_loss", torch.mean(mse_losses), epoch)
+        writer.add_scalar("Loss/train/loss0", torch.mean(losses[:,0]), epoch)
+        writer.add_scalar("Loss/train/loss1", torch.mean(losses[:,1]), epoch)
+        writer.add_scalar("Loss/train/loss2", torch.mean(losses[:,2]), epoch)
+        writer.add_scalar("Loss/train/loss3", torch.mean(losses[:,3]), epoch)
+        writer.add_scalar("Loss/train/loss4", torch.mean(losses[:,4]), epoch)
 
-        # writer.add_scalar("Val_Loss/train/mse_loss", torch.mean(val_mse_loss), epoch)
+        writer.add_scalar("Val_Loss/train/mse_loss", torch.mean(val_mse_loss), epoch)
 
         print('iteration: {} - mse_loss: {} - val_mse_loss: {}'.format(i, torch.mean(mse_losses), torch.mean(val_mse_loss)))
         
@@ -150,7 +152,7 @@ if __name__ == '__main__':
     parser.add_argument('-ne', '--n_epochs', type=int, default=100)
     parser.add_argument('-bs', '--batch_size', type=int, default=128)
     parser.add_argument('-es', '--ensemble_size', type=int, default=5)
-    parser.add_argument('-nh', '--n_hidden', type=int, default=2)
+    parser.add_argument('-nh', '--n_hidden', type=int, default=3)
     parser.add_argument('-eh', '--encoder_hidden_dim', type=int, default=256)
     parser.add_argument('-dh', '--decoder_hidden_dim', type=int, default=128)
     parser.add_argument('-ld', '--latent_dim', type=int, default=8)

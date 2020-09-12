@@ -32,7 +32,7 @@ class DynamicsEnsemble(nn.Module):
         self.ensemble_size = ensemble_size
         self.training = training
 
-        self.encoder = Encoder(in_dim, encoder_hidden_dim, latent_dim)
+        self.encoder = Encoder(in_dim, encoder_hidden_dim, latent_dim, n_hidden=n_hidden)
         self.decoders = self.build_decoder_ensemble(out_dim, decoder_hidden_dim, latent_dim, n_hidden)
         self.opt = optim.Adam(self.parameters(), lr=learn_rate)
 
@@ -40,7 +40,7 @@ class DynamicsEnsemble(nn.Module):
 
     def build_decoder_ensemble(self, out_dim, hidden_dim, latent_dim, n_hidden):
         return [
-            Decoder(out_dim, hidden_dim, latent_dim) for _ in range(self.ensemble_size)
+            Decoder(out_dim, hidden_dim, latent_dim, n_hidden=n_hidden) for _ in range(self.ensemble_size)
         ]
 
     def training_pass(self, z):
